@@ -18,7 +18,7 @@ parser.add_argument("--dry-run", help="Do not actually send mails. Implies --ver
                     action="store_true")
 parser.add_argument("--template", required=True, type=file)
 parser.add_argument("--csv", help="CSV file with recipients mail addresses and template parameters.",
-                    required=True, type=file)
+                    required=True, type=argparse.FileType('rU'))
 parser.add_argument("--csv-delimiter", type=str, default=';',
                     help="Character that separates columns in the CSV file. Defaults to ';'.")
 parser.add_argument("--csv-mail-column", type=str, default='EMail',
