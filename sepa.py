@@ -71,6 +71,10 @@ for row in csv.reader(args.csv, delimiter=args.csv_delimiter):
         templateValues = {key: row[column] for key, column in mapping.items()}
         if args.verbose:
             print templateValues
+        if not templateValues[args.csv_mail_column].strip():
+            print 'Warning! Mail address is not set. Skipping this row and continuing with next row. Full row:'
+            print templateValues
+            continue
         content = template.substitute(templateValues)
         mail = MIMEText(content)
         mail['Subject'] = args.mail_subject
@@ -79,6 +83,13 @@ for row in csv.reader(args.csv, delimiter=args.csv_delimiter):
         if args.verbose:
             print mail
         if not args.dry_run:
-            smtp.sendmail(args.mail_from, templateValues[args.csv_mail_column], mail.as_string())
+            try:
+                smtp.sendmail(args.mail_from, templateValues[args.csv_mail_column], mail.as_string())
+            except Exception as e:
+                print 'ERROR! Sending mail failed for some reason. Continuing with next row.'
+                print 'Exception:'
+                print e
+                print 'Full row data:'
+                print templateValues
 
 if not args.dry_run: smtp.close()
