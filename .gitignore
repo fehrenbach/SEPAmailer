@@ -36,3 +36,4 @@ nosetests.xml
 
 # Clojure stuff
 target/
+/.nrepl-port
