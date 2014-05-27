@@ -4,4 +4,5 @@
                  [com.draines/postal "1.11.1"]
                  [de.ubercode.clostache/clostache "1.4.0"]]
   :main sepa.core
-  :aot [sepa.core])
+  :aot [sepa.core]
+  :plugins [[cider/cider-nrepl "0.7.0-SNAPSHOT"]])
