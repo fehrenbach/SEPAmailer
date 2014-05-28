@@ -1,10 +1,19 @@
-Liebe(r) $vorname,
+Liebe(r) {{Vorname}},
 
 nach den neuen SEPA-Vorschriften sind wir dazu verpflichtet, 14 Tage vor Fälligkeitsdatum über den Einzug einer SEPA-Lastschrift zu informieren. Dies geschieht in Zukunft per E-Mail.
 
 Fällige Zahlung am: 08.05.2013
-Betrag: $Betrag €
-...
+
+Du hast noch nicht bezahlt:
+{{#BetragPWE}}
+Well, this works in mustach, but doesn't in clostache...
+Maybe it will be fixed, or I find a reasonable workaround. Until then don't try to use it.
+Probenwochenende: {{.}}€
+{{/BetragPWE}}
+
+{{#BetragMtgld}}
+Mitgliedsbeitrag: 15€
+{{/BetragMtgld}}
 
 
 Viele Grüße
