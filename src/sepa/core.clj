@@ -2,7 +2,8 @@
   (:require [clojure.tools.cli :refer [parse-opts]]
             [clojure.java.io :refer [as-file reader]]
             [clojure.data.csv :refer [read-csv]]
-            [clostache.parser :refer [render]])
+            [clostache.parser :refer [render]]
+            [postal.core :refer [send-message]])
 ;  (:import [org.apache.commons.validator.routines.EmailValidator])
   (:import [java.nio.file.spi.FileTypeDetector])
   (:gen-class))
@@ -37,20 +38,27 @@
     :default "SEPA"]
    [nil "--attachment ATTACHMENTFILE" "File to attach (the same to all messages)."
     :validate [file-exists? "Attachment file must be the name of an existing file, if provided at all."]]
+   [nil "--smtp-server SERVER" "SMTP server to use."]
+   [nil "--smtp-user USER" "Username for SMTP server."]
    ])
 
+(defn missing-required-option [option]
+  (println "Please pass the required option" option)
+  (println "Usage:")
+  (println (:summary (parse-opts cli-options))))
+
 (defn parse-arguments [args]
-  (let [{:keys [errors options]} (parse-opts args cli-options)]
+  (let [{:keys [errors options summary]} (parse-opts args cli-options)]
     (when errors
       (doseq [error errors]
         (println error))
       (System/exit 1))
-    (when-not (:template options)
-      (println "Please pass in the name of a template to use.")
-      (System/exit 2))
-    (when-not (:csv options)
-      (println "Please pass in the name of a CSV file to use.")
-      (System/exit 3))
+    (doseq [option [:template :csv :smtp-server :smtp-user]]
+      (when-not (get options option)
+        (println "Please pass the required option" (str "--" (name option)))
+        (println "Usage:")
+        (println summary)
+        (System/exit 1)))
     options))
 
 (defn rows-to-maps
@@ -84,10 +92,10 @@ Output format: Rows from the second, as a sequence of maps from the name of the 
   (let [text-content {:type "text/plain; charset=utf-8"
                       :content (render template data)}]
     (if attachment
-      [text-content {:type "attachment"
+      [text-content {:type :attachment
                      :content-type (guess-mime-type attachment)
                      :content (as-file attachment)}]
-      text-content)))
+      [text-content])))
 
 (defn make-mail
   [{:keys [mail-from csv-mail-column mail-subject] :as options} data template]
@@ -100,12 +108,60 @@ Output format: Rows from the second, as a sequence of maps from the name of the 
   [options data template]
   (map #(make-mail options % template) data))
 
+(defn read-password [msg]
+  (apply str (.readPassword (. System console) msg (into-array Object []))))
+
+(defn print-mail [mail]
+  (println "Meta info:" (dissoc mail :body))
+  (println "Body:" (:body mail)))
+
+(def dont-ask-again (atom nil))
+
+(defn send-this-mail?
+  [mail]
+  (if @dont-ask-again
+    true
+    (do
+      (println "You are about to send the following email:")
+      (print-mail mail)
+      (println "Do you really want to send this email?
+[Y]es/Yes to [a]ll/[N]o, not this one/Don't send this or any more mails and [q]uit.")
+      (loop []
+        (let [c (read-line)]
+          (case c
+            ("Y" "y") true
+            ("N" "n") false
+            ("A" "a") (reset! dont-ask-again true)
+            ("Q" "q") (System/exit 0)
+            (recur)))))))
+
+(defn remove-mails-with-no-address
+  [mails]
+  (remove (fn [mail] (or (not (:to mail))
+                         (= "" (:to mail))))
+          mails))
+
+(defn send-mails
+  [{:keys [smtp-server smtp-user]} mails]
+  (let [pass (read-password "Please provide your SMTP password:")]
+    (doseq [mail mails]
+      (when (send-this-mail? mail)
+        (let [res (send-message {:host smtp-server
+                                 :user smtp-user
+                                 :pass pass
+                                 :ssl true}
+                                mail)]
+          (when-not (= (:error res) :SUCCESS)
+            (println "Something went wrong!")
+            (println res)
+            (println mail)
+            (println smtp-server smtp-user)
+            (System/exit 1))
+          (println "Mail sent to" (:to mail)))))))
+
 (defn -main [& args]
   (let [options (parse-arguments args)
         data (read-data options)
         template (read-template options)
         mails (make-mails options data template)]
-;    (send-mails mails options)
-    (println options)
-    (doseq [mail mails]
-      (println mail))))
+    (send-mails options (remove-mails-with-no-address mails))))
