@@ -4,7 +4,6 @@
             [clojure.data.csv :refer [read-csv]]
             [clostache.parser :refer [render]]
             [postal.core :refer [send-message]])
-;  (:import [org.apache.commons.validator.routines.EmailValidator])
   (:import [java.nio.file.spi.FileTypeDetector])
   (:gen-class))
 
@@ -27,8 +26,8 @@
     :parse-fn (fn [s] (if-not (= 1 (count s))
                         (throw (Exception. (str "CSV delimiter must be a single character, was: " s)))
                         (first s)))]
-   [nil "--csv-mail-column COLUMNNAME" "Column in the CSV file that contains the e-mail address, defaults to \"EMail\"."
-    :default :EMail
+   [nil "--csv-mail-column COLUMNNAME" "Column in the CSV file that contains the e-mail address, defaults to \"Email\"."
+    :default :Email
     :parse-fn keyword]
    [nil "--mail-from FROMADDRESS" "Email address to use in from field, defaults to '\"Universitätschor Marburg e.V. - Finanzen\" <finanzen@unichor-marburg.de>'."
     :default "\"Universitätschor Marburg e.V. - Finanzen\" <finanzen@unichor-marburg.de>"
@@ -39,9 +38,9 @@
    [nil "--attachment ATTACHMENTFILE" "File to attach (the same to all messages)."
     :validate [file-exists? "Attachment file must be the name of an existing file, if provided at all."]]
    [nil "--smtp-server SERVER" "SMTP server to use."
-    :default "finanzen@unichor-marburg.de"]
-   [nil "--smtp-user USER" "Username for SMTP server."
     :default "smtp.1und1.de"]
+   [nil "--smtp-user USER" "Username for SMTP server."
+    :default "finanzen@unichor-marburg.de"]
    ])
 
 (defn missing-required-option [option]
@@ -169,5 +168,6 @@ Output format: Rows from the second, as a sequence of maps from the name of the 
     (when (empty? mails)
       (println "No mails to be sent. This is probably a mistake. Did you pass the correct --csv-mail-column option? How about the --csv-delimiter?")
       (println "Command line options:" options)
-      (println "CSV was parsed to this:" data))
+      (println "CSV was parsed to this:" data)
+      (System/exit 1))
     (send-mails options mails)))
