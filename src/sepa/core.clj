@@ -34,12 +34,14 @@
     :default "\"Universitätschor Marburg e.V. - Finanzen\" <finanzen@unichor-marburg.de>"
     ;;    :validate [email? "Must be a well-formed email address, see the default for an example."]
     ]
-   [nil "--mail-subject SUBJECT" "Subject line for e-mails, defaults to \"SEPA\"."
-    :default "SEPA"]
+   [nil "--mail-subject SUBJECT" "Subject line for e-mails, defaults to \"Unichor\"."
+    :default "Unichor"]
    [nil "--attachment ATTACHMENTFILE" "File to attach (the same to all messages)."
     :validate [file-exists? "Attachment file must be the name of an existing file, if provided at all."]]
-   [nil "--smtp-server SERVER" "SMTP server to use."]
-   [nil "--smtp-user USER" "Username for SMTP server."]
+   [nil "--smtp-server SERVER" "SMTP server to use."
+    :default "finanzen@unichor-marburg.de"]
+   [nil "--smtp-user USER" "Username for SMTP server."
+    :default "smtp.1und1.de"]
    ])
 
 (defn missing-required-option [option]
@@ -143,7 +145,7 @@ Output format: Rows from the second, as a sequence of maps from the name of the 
 
 (defn send-mails
   [{:keys [smtp-server smtp-user]} mails]
-  (let [pass (read-password "Please provide your SMTP password:")]
+  (let [pass (read-password (str "Please provide the password for user \"" smtp-user "\" on server \"" smtp-server "\":"))]
     (doseq [mail mails]
       (when (send-this-mail? mail)
         (let [res (send-message {:host smtp-server
