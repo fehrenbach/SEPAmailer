@@ -163,5 +163,9 @@ Output format: Rows from the second, as a sequence of maps from the name of the 
   (let [options (parse-arguments args)
         data (read-data options)
         template (read-template options)
-        mails (make-mails options data template)]
-    (send-mails options (remove-mails-with-no-address mails))))
+        mails (remove-mails-with-no-address (make-mails options data template))]
+    (when (empty? mails)
+      (println "No mails to be sent. This is probably a mistake. Did you pass the correct --csv-mail-column option? How about the --csv-delimiter?")
+      (println "Command line options:" options)
+      (println "CSV was parsed to this:" data))
+    (send-mails options mails)))
